@@ -28,7 +28,7 @@ function USER_REG_EXPIRATION_HOURS() : Int{
 entity User{
   emailAddresses : Set<UserEmailAddress> (inverse=user, validate(emailAddresses.length > 0, "A user account should at least have one email address"))
   email : Email := emailAddresses.first.email
-  username : String (id, validate(username.trim().length() > 4, "User name should be larger that 4 characters"))
+  username : String (name, id, validate(username.trim().length() > 4, "User name should be larger that 4 characters"))
   password : Secret
 
   function changePassword(password : Secret) {
@@ -144,7 +144,7 @@ function getUser(e : Email) : User{
   return if(address != null) address.user else null;
 }
 
-function normalizeEmail( e : String) : String{
+function normalizeEmail( e : String) : Email{
   var normalized : String;
   normalized := e.trim();
   normalized := e.toLowerCase();
@@ -321,12 +321,13 @@ template resetPasswordForm(n : NewPassword){
 }
 
 template manageAccountForm(u : User){
-  var newEmail := ""
+  var newEmail : Email := ""
   
   action addEmail(){
     var emailNormalized := normalizeEmail(newEmail);
     var user := getUser(emailNormalized);
-    validate( user == null, "The entered email address is already in use.");
+    validate(user == null, "The entered email address is already in use.");
+    validate(emailNormalized != "" && emailNormalized.isValid(), "Please enter a valid email address");
     var changeRequest := UserAccountRequest{
       type := UserAccountRequest.NEW_EMAIL()
       user := u
@@ -340,7 +341,9 @@ template manageAccountForm(u : User){
   
   action removeEmail(addr : UserEmailAddress){
     u.emailAddresses.remove(addr);
-    message("The email address " + addr.email + " has been removed from your account");
+    if(u.emailAddresses.length > 0){
+      message("The email address " + addr.email + " has been removed from your account");
+    }
     addr.user := null;
     addr.delete();
   }
@@ -349,13 +352,13 @@ template manageAccountForm(u : User){
     fieldset("Username"){ output(u.username) }
     fieldset("Email addresses"){
       for(addr in u.emailAddresses order by addr.email){
-        output(addr.email) " " confirmActionLink(""+addr.id, "Are you sure you want to remove this email address?")
+        output(addr.email) " " confirmActionLink(""+addr.id, "Are you sure you want to remove this email address?"){ "remove" }
         submit removeEmail(addr)[id=""+addr.id, style="display:none;"]{}         
       }separated-by{ br }
     }
     fieldset("New Email Address"){
       "You can have multiple email addresses linked to your account. New email addresses need to be confirmed through a link sent to the new email address." br
-      input(newEmail)[placeholder="New email address"] " " submit addEmail(){ "Add New Email" } 
+      input(newEmail)[placeholder="New email address"] " " submit addEmail(){ "Add New Email" }
     }
   }
   
@@ -364,8 +367,8 @@ template manageAccountForm(u : User){
 }
 
 template confirmActionLink(actionid : String, confirmQuestion : String){
-  <a href="javascript:var result = confirm(\"" + confirmQuestion + "\"); if(result){} else { void(0); }">
-    
+  <a href="javascript:var result = confirm(\"" + confirmQuestion + "\"); if(result){ document.getElementById(\"" + actionid + "\").click(); } else { void(0); }">
+    elements
   </a>
 }
 
