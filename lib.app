@@ -353,7 +353,12 @@ template manageAccountForm(u : User){
   }
   
   form[all attributes]{
-    fieldset("Username"){ output(u.username) }
+    fieldset("Username"){
+      output(u.username)
+      if(loggedIn() && securityContext.principal.isAdmin){
+        br "new username (admin only): " input(u.username) " " submit action{}{"Save"}
+      }
+    }
     fieldset("Email addresses"){
       for(addr in u.emailAddresses order by addr.email){
         output(addr.email) " " confirmActionLink(""+addr.id, "Are you sure you want to remove this email address?"){ "remove" }
@@ -445,7 +450,7 @@ rule page signup(){ true }
 rule page forgot-password(eml : Email){ true }
 rule page reset-password(n : NewPassword){ true }
 rule page signin(from : URL){ true }
-rule page manage-account(u : User){ loggedIn() && securityContext.principal == u }
+rule page manage-account(u : User){ loggedIn() && securityContext.principal == u || securityContext.principal.isAdmin }
 
 section pages
 
