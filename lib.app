@@ -167,6 +167,8 @@ template registerUserForm(){
     registration.requestIP := remoteAddress();
     registration.save();
     registration.sendEmail();
+    message("An account confirmation has been sent to your email address");
+    return root();
   }
   
   form[all attributes]{
@@ -229,7 +231,8 @@ template confirmRegistrationForm(reg : UserAccountRequest){
   action verifyReg(){
     reg.confirmAccount(eml);
     message("Your account is now confirmed and activated.");
-    return url(HOMEPAGE_URL());
+    getSessionManager().securityContext.principal := reg.user;
+    return root();
   }
   
   form[all attributes]{
