@@ -78,9 +78,10 @@ entity UserAccountRequest{
         email := normalizedEmail
       };
       user.emailAddresses.add(eml);
+      consumed := true;
+      user.save();
     }
-    consumed := true;
-    user.save();
+    
   }
   
   function confirmNewEmail(){
@@ -161,8 +162,8 @@ template registerUserForm(){
   action register(){
     registration.password := password1.digest();
     var normalizedEmail := normalizeEmail(registration.email);
-    var users := from User where email = ~normalizedEmail;
-    validate(users.length < 1, "A user with that email address already exists");
+    var addresses := from UserEmailAddress where email = ~normalizedEmail;
+    validate(addresses.length < 1, "A user with that email address already exists");
     registration.requestIP := remoteAddress();
     registration.save();
     registration.sendEmail();
